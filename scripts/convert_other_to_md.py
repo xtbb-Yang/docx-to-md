@@ -201,7 +201,9 @@ def render_pdf_pages(source: Path, output_dir: Path, dpi: int = 300) -> list[Pat
     except ImportError:
         print(
             "error: pymupdf is not installed. Install it with:\n"
-            "  pip install pymupdf\n"
+            "  pip3 install pymupdf\n"
+            "If you get 'externally-managed-environment' error, try:\n"
+            "  pip3 install --user --break-system-packages pymupdf\n"
             "Required for --vision mode (PDF page rendering).",
             file=sys.stderr,
         )
@@ -341,7 +343,9 @@ def vision_convert_page(image_path: Path, timeout: int = 120) -> str:
     except ImportError:
         print(
             "error: openai package is not installed. Install it with:\n"
-            "  pip install openai\n"
+            "  pip3 install openai\n"
+            "If you get 'externally-managed-environment' error, try:\n"
+            "  pip3 install --user --break-system-packages openai\n"
             "Required for --vision mode (VLM API calls).",
             file=sys.stderr,
         )
@@ -491,7 +495,9 @@ def convert_file(
     except ImportError:
         print(
             "error: markitdown is not installed. Install it with:\n"
-            "  pip install 'markitdown[pdf,pptx,xlsx]'\n"
+            "  pip3 install 'markitdown[pdf,pptx,xlsx]'\n"
+            "If you get 'externally-managed-environment' error, try:\n"
+            "  pip3 install --user --break-system-packages 'markitdown[pdf,pptx,xlsx]'\n"
             "Required sub-packages: pdfminer.six, python-pptx, openpyxl",
             file=sys.stderr,
         )

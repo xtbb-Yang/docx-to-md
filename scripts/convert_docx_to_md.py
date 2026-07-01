@@ -323,7 +323,15 @@ def run_pandoc(source: Path, raw_markdown: Path, pandoc: str, extract_media_dir:
     try:
         subprocess.run(command, check=True, text=True, capture_output=True, cwd=cwd)
     except FileNotFoundError as exc:
-        raise RuntimeError("Pandoc is not installed or not found in PATH. Install it first, then rerun conversion.") from exc
+        raise RuntimeError(
+            "Pandoc is not installed or not found in PATH.\n"
+            "Install options:\n"
+            "  brew install pandoc          # recommended on macOS\n"
+            "  sudo apt install pandoc      # Ubuntu/Debian\n"
+            "If already installed but not found, add it to PATH:\n"
+            "  export PATH=\"/opt/homebrew/bin:$PATH\"\n"
+            "Then rerun conversion."
+        ) from exc
     except subprocess.CalledProcessError as exc:
         details = exc.stderr.strip() or exc.stdout.strip() or str(exc)
         raise RuntimeError(f"Pandoc failed for {source}: {details}") from exc
