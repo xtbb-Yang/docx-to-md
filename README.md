@@ -1,12 +1,14 @@
 # docx-to-md
 
-A CodeBuddy skill for converting Word `.docx` documents into clean, AI-friendly Markdown for Obsidian, RAG, and knowledge bases.
+A CodeBuddy skill for converting documents (`.docx`, `.pdf`, `.pptx`, `.xlsx`) into clean, AI-friendly Markdown for Obsidian, RAG, and knowledge bases. Includes a VLM vision mode for PDFs with charts, diagrams, and visual content.
 
-一个用于将 Word `.docx` 文档转换为干净 Markdown 的 CodeBuddy Skill，支持批量转换、图片提取、表格清理和仅文本模式，适合 Obsidian、RAG 和知识库入库。
+一个用于将文档（`.docx`、`.pdf`、`.pptx`、`.xlsx`）转换为干净 Markdown 的 CodeBuddy Skill，支持批量转换、图片提取、表格清理和仅文本模式，适合 Obsidian、RAG 和知识库入库。新增 VLM 视觉模式，可处理含图表/架构图/流程图的 PDF。
 
 ---
 
 ## Features / 功能特性
+
+### DOCX Conversion / DOCX 转换
 
 - Convert single `.docx` files to `.md`  
   将单个 `.docx` 文件转换为 `.md`
@@ -32,6 +34,28 @@ A CodeBuddy skill for converting Word `.docx` documents into clean, AI-friendly 
   清理噪声 HTML、图片标签和链接包装
 - Skip temporary Word files such as `~$*.docx`  
   自动跳过 Word 临时文件，例如 `~$*.docx`
+
+### PDF / PPTX / XLSX Conversion / PDF、PPTX、XLSX 转换
+
+- Convert PDF, PPTX, XLSX to Markdown via MarkItDown  
+  通过 MarkItDown 将 PDF、PPTX、XLSX 转换为 Markdown
+- Extract base64-encoded images to local files  
+  提取 base64 编码图片为本地文件
+- HTML cleanup and blank line normalization  
+  HTML 清理和空行规范化
+
+### 🆕 Vision Mode (VLM) / 视觉模式
+
+- Render PDF pages as high-resolution PNG images via PyMuPDF  
+  使用 PyMuPDF 将 PDF 页面渲染为高清 PNG 图片
+- Send page images to multimodal AI models for visual understanding  
+  将页面图片发送给多模态 AI 模型进行视觉理解
+- Support multiple VLM providers: OpenAI (GPT-4o), Google Gemini, Anthropic Claude, 智谱 GLM-4V  
+  支持多种 VLM provider：OpenAI、Google Gemini、Anthropic Claude、智谱 GLM-4V
+- Automatic fallback to pdftotext on per-page failure  
+  单页 VLM 失败时自动 fallback 到 pdftotext
+- Detailed setup guide when API key is missing  
+  API Key 未配置时输出详细的配置教学
 
 ---
 
@@ -59,30 +83,60 @@ Use this skill when you need to:
 
 ## Requirements / 依赖要求
 
-This skill depends on [Pandoc](https://pandoc.org/).  
-本 skill 依赖 [Pandoc](https://pandoc.org/)。
+### DOCX conversion / DOCX 转换依赖
 
-Check whether Pandoc is available:  
-检查 Pandoc 是否可用：
+[Pandoc](https://pandoc.org/) is required for `.docx` conversion.  
+`.docx` 转换依赖 [Pandoc](https://pandoc.org/)。
 
 ```bash
+# Check / 检查
 pandoc --version
-```
 
-Install on macOS:  
-macOS 安装方式：
-
-```bash
+# Install on macOS / macOS 安装
 brew install pandoc
 ```
 
-If `pandoc` is installed but not found in your terminal, make sure Homebrew is in your `PATH`:  
-如果已经安装 `pandoc`，但终端找不到命令，请确认 Homebrew 路径已加入 `PATH`：
+### PDF / PPTX / XLSX conversion / PDF、PPTX、XLSX 转换依赖
 
 ```bash
-echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+# MarkItDown + pdfminer (text extraction)
+pip install markitdown pdfminer.six
+```
+
+### Vision mode (optional) / 视觉模式依赖（可选）
+
+Required only when using `--vision` for PDFs with charts/diagrams.  
+仅在使用 `--vision` 处理含图表的 PDF 时需要。
+
+```bash
+# PyMuPDF: render PDF pages to images / 将 PDF 页面渲染为图片
+pip install pymupdf
+
+# OpenAI SDK: call VLM API / 调用多模态 API
+pip install openai
+```
+
+**Environment variable setup / 环境变量配置**（choose one provider / 任选一个）：
+
+```bash
+# OpenAI (GPT-4o)
+echo 'export VISION_API_KEY="sk-your-key"' >> ~/.zshrc
+echo 'export VISION_API_BASE="https://api.openai.com/v1"' >> ~/.zshrc
+echo 'export VISION_MODEL="gpt-4o"' >> ~/.zshrc
 source ~/.zshrc
 ```
+
+Supported providers / 支持的 Provider：
+
+| Provider | VISION_API_BASE | VISION_MODEL | Get Key / 获取 Key |
+|----------|----------------|--------------|-------------------|
+| OpenAI | `https://api.openai.com/v1` | `gpt-4o` | platform.openai.com |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-2.5-flash` | aistudio.google.com |
+| 智谱 GLM-4V | `https://open.bigmodel.cn/api/paas/v4` | `glm-4v-plus` | open.bigmodel.cn |
+| Anthropic | `https://api.anthropic.com/v1` | `claude-sonnet-4` | console.anthropic.com |
+
+You can also just set provider-specific keys (e.g. `OPENAI_API_KEY`), the script will auto-detect.  
+也可以直接设置 provider 专属变量（如 `OPENAI_API_KEY`），脚本会自动识别。
 
 ---
 
@@ -107,16 +161,18 @@ After installation, use it in CodeBuddy with:
 
 ## Script Selection Logic / 脚本选择逻辑
 
-The skill includes two conversion scripts.  
-本 skill 包含两个转换脚本。
+The skill includes three conversion scripts.  
+本 skill 包含三个转换脚本。
 
 | User intent / 用户意图 | Script / 使用脚本 |
 |---|---|
-| Keep images, extract images, or no image preference mentioned / 用户要求保留图片、提取图片，或未说明是否保留图片 | `scripts/convert_docx_to_md.py` |
-| Text only, no images, or no image extraction / 用户明确要求仅保留文本、不要图片、不提取图片 | `scripts/convert_docx_to_md_text_only.py` |
+| `.docx` with images / DOCX 保留图片 | `scripts/convert_docx_to_md.py` |
+| `.docx` text only / DOCX 仅文本 | `scripts/convert_docx_to_md_text_only.py` |
+| `.pdf` / `.pptx` / `.xlsx` (text extraction) / PDF、PPTX、XLSX 文本提取 | `scripts/convert_other_to_md.py` |
+| `.pdf` with charts/diagrams (VLM) / 含图表的 PDF 视觉理解 | `scripts/convert_other_to_md.py --vision` |
 
-Default behavior is to keep images.  
-默认行为是保留图片。
+Default behavior for DOCX is to keep images.  
+DOCX 默认行为是保留图片。
 
 ---
 
@@ -189,6 +245,41 @@ python3 scripts/convert_docx_to_md_text_only.py \
   --recursive
 ```
 
+### 6. Convert PDF / PPTX / XLSX (text extraction) / 转换 PDF、PPTX、XLSX
+
+```bash
+python3 scripts/convert_other_to_md.py \
+  --input-file report.pdf \
+  --output-file report.md
+```
+
+### 7. Convert PDF with Vision mode (VLM) / 使用视觉模式转换含图 PDF
+
+```bash
+python3 scripts/convert_other_to_md.py \
+  --input-file report.pdf \
+  --output-file report.md \
+  --vision
+```
+
+Custom DPI and timeout / 自定义渲染精度和超时：
+
+```bash
+python3 scripts/convert_other_to_md.py \
+  --input-file report.pdf \
+  --output-file report.md \
+  --vision --vision-dpi 200 --vision-timeout 180
+```
+
+Batch vision mode / 批量视觉转换：
+
+```bash
+python3 scripts/convert_other_to_md.py \
+  --input-dir ./pdfs \
+  --output-dir ./markdown \
+  --vision
+```
+
 ---
 
 ## Options / 参数说明
@@ -212,6 +303,14 @@ Image mode only / 图片模式参数：
 |---|---|
 | `--no-extract-images` | Compatibility option in the main script; for new text-only tasks, prefer `convert_docx_to_md_text_only.py` / 主脚本兼容参数；新任务建议优先使用文本专用脚本 |
 | `--image-dir-suffix` | Suffix for image directories; default is `_images` / 图片目录后缀，默认是 `_images` |
+
+Vision mode options (`convert_other_to_md.py`) / 视觉模式参数：
+
+| Option / 参数 | Description / 说明 |
+|---|---|
+| `--vision` | Enable VLM vision mode for PDF; renders pages as images and uses multimodal AI for recognition / 启用 VLM 视觉模式，将 PDF 页面渲染为图片后由多模态 AI 识别 |
+| `--vision-dpi` | DPI for page rendering; default 300 / 页面渲染 DPI，默认 300 |
+| `--vision-timeout` | Per-page VLM timeout in seconds; default 120 / 每页 VLM 超时秒数，默认 120 |
 
 ---
 
@@ -267,10 +366,12 @@ Some Markdown previewers may restrict clicking local file links inside preview m
 ```text
 docx-to-md/
 ├── SKILL.md
-├── scripts/
-│   ├── convert_docx_to_md.py
-│   └── convert_docx_to_md_text_only.py
-└── README.md
+├── README.md
+├── LICENSE
+└── scripts/
+    ├── convert_docx_to_md.py           # DOCX → MD (with images)
+    ├── convert_docx_to_md_text_only.py  # DOCX → MD (text only)
+    └── convert_other_to_md.py           # PDF/PPTX/XLSX → MD (+ Vision mode)
 ```
 
 ---
