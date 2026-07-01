@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Convert PDF, PPTX, and XLSX files to clean Markdown using MarkItDown.
+"""Convert PDF, PPTX, XLSX, and HTML files to clean Markdown using MarkItDown.
 
 This script uses the MarkItDown library as the conversion backend for file types
 that Pandoc does not handle well. The output goes through the same post-processing
 pipeline as the docx-to-md converter (HTML cleanup, blank line merging, image
 extraction from base64, table normalization, etc.).
 
-Supported formats: .pdf, .pptx, .xlsx
+Supported formats: .pdf, .pptx, .xlsx, .html, .htm
 
 Vision mode (--vision): For PDF files containing images, charts, or diagrams,
 renders each page as a high-resolution PNG and uses a VLM (via claude-internal)
@@ -29,7 +29,7 @@ import time
 from pathlib import Path
 from urllib.parse import unquote
 
-SUPPORTED_EXTENSIONS = {".pdf", ".pptx", ".xlsx"}
+SUPPORTED_EXTENSIONS = {".pdf", ".pptx", ".xlsx", ".html", ".htm"}
 DEFAULT_IMAGE_DIR_SUFFIX = "_images"
 DEFAULT_CELL_JOINER = "；"
 MEANINGLESS_ALT_VALUES = {"descript", "description", "image", "图片"}
